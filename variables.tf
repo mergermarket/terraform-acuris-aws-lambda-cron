@@ -41,6 +41,7 @@ variable "datadog_log_subscription_arn" {
 
 variable "lambda_role_policy" {
   description = "The Lambda IAM Role Policy."
+
   default = <<END
 {
   "Statement": [

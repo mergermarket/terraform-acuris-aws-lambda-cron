@@ -1,9 +1,9 @@
 module "lambda" {
   source                       = "mergermarket/aws-lambda/acuris"
   version                      = "0.0.3"
-  s3_bucket     = "${var.s3_bucket}"
-  s3_key        = "${var.s3_key}"
-  function_name = "${var.function_name}"
+  s3_bucket                    = "${var.s3_bucket}"
+  s3_key                       = "${var.s3_key}"
+  function_name                = "${var.function_name}"
   handler                      = "${var.handler}"
   runtime                      = "${var.runtime}"
   timeout                      = "${var.timeout}"
