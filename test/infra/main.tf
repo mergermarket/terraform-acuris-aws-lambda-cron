@@ -16,7 +16,7 @@ module "lambda" {
   s3_key               = "s3key.zip"
   function_name        = "check_lambda_function"
   handler              = "some_handler"
-  runtime              = "python"
+  runtime              = "python2.7"
   lambda_env           = "${var.lambda_env}"
   lambda_cron_schedule = "rate(5 minutes)"
 
@@ -30,7 +30,7 @@ module "lambda_long_name" {
   s3_key               = "s3key.zip"
   function_name        = "check_lambda_function_with_a_really_long_name_should_be_truncated"
   handler              = "some_handler"
-  runtime              = "python"
+  runtime              = "python2.7"
   lambda_env           = "${var.lambda_env}"
   lambda_cron_schedule = "rate(5 minutes)"
 
