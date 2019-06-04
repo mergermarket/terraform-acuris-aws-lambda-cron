@@ -23,7 +23,8 @@ This module will deploy a Lambda function and a cron rule to run the Lambda func
 
 ```hcl
 module "lambda-function" {
-  source                    = "github.com/mergermarket/tf_aws_lambda"
+  source                    = "mergermarket/aws-lambda-cron/acuris"
+  version                   = "0.0.4"
   s3_bucket                 = "s3_bucket_name"
   s3_key                    = "s3_key_for_lambda"
   function_name             = "do_foo"
