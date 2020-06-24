@@ -89,3 +89,9 @@ variable "layer" {
   description = "Layer ARN - needs to include the version number"
   default     = ""
 }
+
+variable "tags" {
+  description = "A mapping of tags to assign to this lambda function."
+  type        = "map"
+  default     = {}
+}

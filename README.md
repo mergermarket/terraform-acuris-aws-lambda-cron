@@ -17,7 +17,7 @@ This module will deploy a Lambda function and a cron rule to run the Lambda func
 - `timeout` (string) - _optional_ - The number of seconds the Lambda will be allowed to run for.
 - `lambda_role_policy` (string) - The Lambda IAM Role Policy.
 - `lambda_env` - (string) - _optional_ - Environment parameters passed to the Lambda function.
-
+- `tags` (map) - A mapping of tags to assign to this lambda function.
 
 ## Usage
 

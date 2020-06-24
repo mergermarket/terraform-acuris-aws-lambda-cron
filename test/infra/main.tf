@@ -22,6 +22,7 @@ module "lambda" {
 
   subnet_ids         = "${var.subnet_ids}"
   security_group_ids = "${var.security_group_ids}"
+  tags               = "${var.tags}"
 }
 
 module "lambda_long_name" {
@@ -52,6 +53,12 @@ variable "security_group_ids" {
 
 variable "lambda_env" {
   description = "Environment parameters passed to the Lambda function"
+  type        = "map"
+  default     = {}
+}
+
+variable "tags" {
+  description = "A mapping of tags to assign to this lambda function."
   type        = "map"
   default     = {}
 }
