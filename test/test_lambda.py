@@ -101,6 +101,45 @@ class TestCreateTaskdef(unittest.TestCase):
       vpc_config.0.vpc_id:                        <computed>
         """).strip() in output
 
+    def test_create_lambda_with_tags(self):
+        output = check_output([
+            'terraform',
+            'plan',
+            '-var', 'tags={"component"="test-component" "env"="test"}',
+            '-no-color',
+            '-target=module.lambda',
+            'test/infra'
+        ]).decode('utf-8')
+        assert dedent("""
++ module.lambda.aws_lambda_function.lambda_function
+      id:                             <computed>
+      arn:                            <computed>
+      environment.#:                  "1"
+      function_name:                  "check_lambda_function"
+      handler:                        "some_handler"
+      invoke_arn:                     <computed>
+      last_modified:                  <computed>
+      layers.#:                       "1"
+      memory_size:                    "128"
+      publish:                        "false"
+      qualified_arn:                  <computed>
+      reserved_concurrent_executions: "-1"
+      role:                           "${aws_iam_role.iam_for_lambda.arn}"
+      runtime:                        "python2.7"
+      s3_bucket:                      "cdflow-lambda-releases"
+      s3_key:                         "s3key.zip"
+      source_code_hash:               <computed>
+      source_code_size:               <computed>
+      tags.%:                         "2"
+      tags.component:                 "test-component"
+      tags.env:                       "test"
+      timeout:                        "3"
+      tracing_config.#:               <computed>
+      version:                        <computed>
+      vpc_config.#:                   "1"
+      vpc_config.0.vpc_id:            <computed>
+        """).strip() in output
+
     def test_lambda_in_vpc_gets_correct_execution_role(self):
         output = check_output([
             'terraform',

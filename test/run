@@ -6,6 +6,7 @@ repo_dir=$(git rev-parse --show-toplevel)
 name=$(basename $repo_dir)-test
 
 docker build -t $name $repo_dir/test
+docker build -t cronlambda .
 
 docker run \
     --name $name \
@@ -17,3 +18,5 @@ docker run \
         py.test \
         --tb=short \
         "$@"
+
+docker run --name cronlambda --rm -i -w /workdir -v J:/WM/Projects/terraform-acuris-aws-lambda-cron:/workdir cronlambda py.test --tb=short ./test/test_lambda.py
