@@ -24,12 +24,12 @@ variable "lambda_cron_schedule" {
 }
 
 variable "subnet_ids" {
-  type        = "list"
+  type        = list
   description = "The VPC subnets in which the Lambda runs"
 }
 
 variable "security_group_ids" {
-  type        = "list"
+  type        = list
   description = "The VPC security groups assigned to the Lambda"
 }
 
