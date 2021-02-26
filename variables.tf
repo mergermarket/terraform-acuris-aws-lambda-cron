@@ -24,12 +24,12 @@ variable "lambda_cron_schedule" {
 }
 
 variable "subnet_ids" {
-  type        = list(string)
+  type        = "list"
   description = "The VPC subnets in which the Lambda runs"
 }
 
 variable "security_group_ids" {
-  type        = list(string)
+  type        = "list"
   description = "The VPC security groups assigned to the Lambda"
 }
 
@@ -57,7 +57,6 @@ variable "lambda_role_policy" {
   ]
 }
 END
-
 }
 
 variable "timeout" {
@@ -72,7 +71,7 @@ variable "memory_size" {
 
 variable "lambda_env" {
   description = "Environment parameters passed to the Lambda function."
-  type        = map(string)
+  type        = "map"
   default     = {}
 }
 
@@ -93,7 +92,6 @@ variable "layer" {
 
 variable "tags" {
   description = "A mapping of tags to assign to this lambda function."
-  type        = map(string)
+  type        = "map"
   default     = {}
 }
-
