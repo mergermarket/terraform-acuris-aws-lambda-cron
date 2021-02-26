@@ -7,13 +7,3 @@ name=$(basename $repo_dir)-test
 
 docker build -t $name $repo_dir/test
 
-docker run \
-    --name $name \
-    --rm \
-    -i $(tty -s && echo -t) \
-    -w $repo_dir \
-    -v $repo_dir:$repo_dir \
-    $name \
-        py.test \
-        --tb=short \
-        "$@"
