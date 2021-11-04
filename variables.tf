@@ -23,17 +23,19 @@ variable "lambda_cron_schedule" {
   description = "The sceduling expression for how often the Lambda function runs."
 }
 
+// Optional Variables
 variable "subnet_ids" {
   type        = list(string)
   description = "The VPC subnets in which the Lambda runs"
+  default     = []
 }
 
 variable "security_group_ids" {
   type        = list(string)
   description = "The VPC security groups assigned to the Lambda"
+  default     = []
 }
 
-// Optional Variables
 variable "datadog_log_subscription_arn" {
   description = "Log subscription arn for shipping logs to datadog"
   default     = ""
