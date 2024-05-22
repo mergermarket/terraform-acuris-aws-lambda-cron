@@ -99,3 +99,8 @@ variable "tags" {
   default     = {}
 }
 
+variable "architectures" {
+  type = list(string)
+  description = "The architectures supported by the Lambda function."
+  default = ["x86_64"]  
+}

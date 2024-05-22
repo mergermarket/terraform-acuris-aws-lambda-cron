@@ -9,6 +9,7 @@ resource "aws_lambda_function" "lambda_function" {
   memory_size   = var.memory_size
   layers        = [var.layer]
   tags          = var.tags
+  architectures = var.architectures
 
   vpc_config {
     subnet_ids         = var.subnet_ids
