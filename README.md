@@ -18,6 +18,7 @@ This module will deploy a Lambda function and a cron rule to run the Lambda func
 - `lambda_role_policy` (string) - The Lambda IAM Role Policy.
 - `lambda_env` - (string) - _optional_ - Environment parameters passed to the Lambda function.
 - `tags` (map) - A mapping of tags to assign to this lambda function.
+- `architectures (list) - _optional_ - The architectures supported by the Lambda function. Defaults to ["x86_64"].
 
 ## Usage
 
@@ -32,6 +33,7 @@ module "lambda-function" {
   runtime                   = "nodejs"
   lambda_cron_schedule      = "rate(5 minutes)"
   lambda_env                = "${var.lambda_env}"
+  architecture              = ["arm64"]
 }
 ```
 Lambda environment variables file:
