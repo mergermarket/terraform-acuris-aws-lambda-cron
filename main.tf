@@ -1,9 +1,9 @@
 locals {
-  security_group_ids = var.security_group_ids != [] ? var.security_group_ids : [aws_security_group.default.id]
+  security_group_ids = var.use_default_sg == true ? [aws_security_group.default.id] : var.security_group_ids
 }
 
 data "aws_security_group" "default" {
-  count = var.security_group_ids != [] ? 0 : 1
+  count = var.use_default_sg == true ? 1 : 0
   name = "${terraform.workspace}-default-lambda-sg"
 }
 resource "aws_lambda_function" "lambda_function" {
