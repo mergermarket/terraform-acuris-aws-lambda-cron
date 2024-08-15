@@ -1,5 +1,5 @@
 locals {
-  security_group_ids = var.use_default_sg == true ? [aws_security_group.default.id] : var.security_group_ids
+  security_group_ids = var.use_default_sg == true ? [data.aws_security_group.default[0].id] : var.security_group_ids
 }
 
 data "aws_security_group" "default" {
