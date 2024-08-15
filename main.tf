@@ -19,11 +19,13 @@ resource "aws_lambda_function" "lambda_function" {
   tags          = var.tags
   architectures = var.architectures
 
-  vpc_config {
-    subnet_ids         = var.subnet_ids
-    security_group_ids = local.security_group_ids
+  dynamic vpc_config {
+    for_each = local.security_group_ids != [] ? [1] : []
+      content {
+        subnet_ids         = var.subnet_ids
+        security_group_ids = local.security_group_ids
+    }
   }
-
   environment {
     variables = var.lambda_env
   }
