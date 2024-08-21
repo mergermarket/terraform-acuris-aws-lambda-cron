@@ -1,10 +1,11 @@
 locals {
-  security_group_ids = var.use_default_sg == true ? [data.aws_security_group.default[0].id] : var.security_group_ids
+  security_group_ids = var.use_default_security_group == true ? [data.aws_security_group.default[0].id] : var.security_group_ids
 }
 
 data "aws_security_group" "default" {
   count = var.use_default_sg == true ? 1 : 0
   name = "${terraform.workspace}-default-lambda-sg"
+  vpc_id = var.vpc_id
 }
 resource "aws_lambda_function" "lambda_function" {
   s3_bucket     = var.s3_bucket
