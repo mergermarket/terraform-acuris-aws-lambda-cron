@@ -18,22 +18,26 @@ This module will deploy a Lambda function and a cron rule to run the Lambda func
 - `lambda_role_policy` (string) - The Lambda IAM Role Policy.
 - `lambda_env` - (string) - _optional_ - Environment parameters passed to the Lambda function.
 - `tags` (map) - A mapping of tags to assign to this lambda function.
-- `architectures (list) - _optional_ - The architectures supported by the Lambda function. Defaults to ["x86_64"].
+- `architectures` (list) - _optional_ - The architectures supported by the Lambda function. Defaults to ["x86_64"].
+- `use_default_security_group` (bool) - _optional_ - Whether to use the default security group for the Lambda function. Defaults to false.
+- `vpce_id` (string) - _optional_ - The ID of the VPC endpoint to associate with the Lambda function.
 
 ## Usage
 
 ```hcl
 module "lambda-function" {
-  source                    = "mergermarket/aws-lambda-cron/acuris"
-  version                   = "0.0.4"
-  s3_bucket                 = "s3_bucket_name"
-  s3_key                    = "s3_key_for_lambda"
-  function_name             = "do_foo"
-  handler                   = "do_foo_handler"
-  runtime                   = "nodejs"
-  lambda_cron_schedule      = "rate(5 minutes)"
-  lambda_env                = "${var.lambda_env}"
-  architecture              = ["arm64"]
+  source                     = "mergermarket/aws-lambda-cron/acuris"
+  version                    = "0.0.4"
+  s3_bucket                  = "s3_bucket_name"
+  s3_key                     = "s3_key_for_lambda"
+  function_name              = "do_foo"
+  handler                    = "do_foo_handler"
+  runtime                    = "nodejs"
+  lambda_cron_schedule       = "rate(5 minutes)"
+  lambda_env                 = "${var.lambda_env}"
+  architecture               = ["arm64"]
+  vpc_id                     = module.platform_config.config["vpc"]
+  use_default_security_group = true
 }
 ```
 Lambda environment variables file:
