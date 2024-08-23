@@ -105,11 +105,6 @@ variable "architectures" {
   default = ["x86_64"]  
 }
 
-variable "use_default_sg" {
-  description = "Whether to use the default security group for the Lambda function."
-  default     = false
-}
-
 variable "vpc_id" {
   description = "The VPC ID in which the Lambda runs"
   default     = ""
