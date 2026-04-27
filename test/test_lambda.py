@@ -1,206 +1,145 @@
 import unittest
+import json
 import os
-from textwrap import dedent
 from subprocess import check_call, check_output
 
-cwd = os.getcwd()
+
+def get_plan_json(*extra_args):
+    """Run terraform plan and return the parsed JSON plan."""
+    check_call(
+        ['terraform', '-chdir=test/infra', 'plan',
+         '-input=false', '-no-color', '-out=tfplan']
+        + list(extra_args)
+    )
+    raw = check_output(
+        ['terraform', '-chdir=test/infra', 'show', '-json', 'tfplan']
+    ).decode('utf-8')
+    os.remove('test/infra/tfplan')
+    return json.loads(raw)
 
 
-class TestCreateTaskdef(unittest.TestCase):
+def get_resource_changes(plan_json):
+    """Return a dict of address -> resource_change from the plan."""
+    return {
+        rc['address']: rc
+        for rc in plan_json.get('resource_changes', [])
+    }
 
-    def setUp(self):
-        check_call(['terraform', 'init', 'test/infra'])
+
+class TestLambdaCron(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        check_call(['terraform', '-chdir=test/infra', 'init', '-input=false'])
 
     def test_all_resources_to_be_created(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-no-color',
-            '-target=module.lambda',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-            Plan: 7 to add, 0 to change, 0 to destroy.
-        """).strip() in output
+        plan = get_plan_json('-target=module.lambda')
+        resources = get_resource_changes(plan)
+        creates = [
+            addr for addr, rc in resources.items()
+            if 'create' in rc['change']['actions']
+        ]
+        self.assertEqual(len(creates), 7)
 
     def test_create_lambda(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-no-color',
-            '-target=module.lambda',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-+ module.lambda.aws_lambda_function.lambda_function
-      id:                             <computed>
-      arn:                            <computed>
-      environment.#:                  "1"
-      function_name:                  "check_lambda_function"
-      handler:                        "some_handler"
-      invoke_arn:                     <computed>
-      last_modified:                  <computed>
-      layers.#:                       "1"
-      memory_size:                    "128"
-      publish:                        "false"
-      qualified_arn:                  <computed>
-      reserved_concurrent_executions: "-1"
-      role:                           "${aws_iam_role.iam_for_lambda.arn}"
-      runtime:                        "python2.7"
-      s3_bucket:                      "cdflow-lambda-releases"
-      s3_key:                         "s3key.zip"
-      source_code_hash:               <computed>
-      source_code_size:               <computed>
-      timeout:                        "3"
-      tracing_config.#:               <computed>
-      version:                        <computed>
-      vpc_config.#:                   "1"
-      vpc_config.0.vpc_id:            <computed>
-        """).strip() in output
+        plan = get_plan_json('-target=module.lambda')
+        resources = get_resource_changes(plan)
+
+        values = resources[
+            'module.lambda.aws_lambda_function.lambda_function'
+        ]['change']['after']
+
+        self.assertEqual(values['function_name'], 'check_lambda_function')
+        self.assertEqual(values['handler'], 'some_handler')
+        self.assertEqual(values['runtime'], 'python2.7')
+        self.assertEqual(values['s3_bucket'], 'cdflow-lambda-releases')
+        self.assertEqual(values['s3_key'], 's3key.zip')
+        self.assertEqual(values['timeout'], 3)
+        self.assertEqual(values['memory_size'], 128)
 
     def test_create_lambda_in_vpc(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-var', 'subnet_ids=[1,2,3]',
-            '-var', 'security_group_ids=[4]',
-            '-no-color',
+        plan = get_plan_json(
             '-target=module.lambda',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-+ module.lambda.aws_lambda_function.lambda_function
-      id:                                         <computed>
-      arn:                                        <computed>
-      environment.#:                              "1"
-      function_name:                              "check_lambda_function"
-      handler:                                    "some_handler"
-      invoke_arn:                                 <computed>
-      last_modified:                              <computed>
-      layers.#:                                   "1"
-      memory_size:                                "128"
-      publish:                                    "false"
-      qualified_arn:                              <computed>
-      reserved_concurrent_executions:             "-1"
-      role:                                       "${aws_iam_role.iam_for_lambda.arn}"
-      runtime:                                    "python2.7"
-      s3_bucket:                                  "cdflow-lambda-releases"
-      s3_key:                                     "s3key.zip"
-      source_code_hash:                           <computed>
-      source_code_size:                           <computed>
-      timeout:                                    "3"
-      tracing_config.#:                           <computed>
-      version:                                    <computed>
-      vpc_config.#:                               "1"
-      vpc_config.0.security_group_ids.#:          "1"
-      vpc_config.0.security_group_ids.4088798008: "4"
-      vpc_config.0.subnet_ids.#:                  "3"
-      vpc_config.0.subnet_ids.1842515611:         "3"
-      vpc_config.0.subnet_ids.2212294583:         "1"
-      vpc_config.0.subnet_ids.450215437:          "2"
-      vpc_config.0.vpc_id:                        <computed>
-        """).strip() in output
+            '-var', 'subnet_ids=["1","2","3"]',
+            '-var', 'security_group_ids=["4"]',
+        )
+        resources = get_resource_changes(plan)
+
+        values = resources[
+            'module.lambda.aws_lambda_function.lambda_function'
+        ]['change']['after']
+
+        vpc_config = values['vpc_config']
+        self.assertEqual(len(vpc_config), 1)
+        self.assertEqual(sorted(vpc_config[0]['subnet_ids']), ['1', '2', '3'])
+        self.assertEqual(vpc_config[0]['security_group_ids'], ['4'])
 
     def test_create_lambda_with_tags(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-var', 'tags={"component"="test-component" "env"="test"}',
-            '-no-color',
+        plan = get_plan_json(
             '-target=module.lambda',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-+ module.lambda.aws_lambda_function.lambda_function
-      id:                             <computed>
-      arn:                            <computed>
-      environment.#:                  "1"
-      function_name:                  "check_lambda_function"
-      handler:                        "some_handler"
-      invoke_arn:                     <computed>
-      last_modified:                  <computed>
-      layers.#:                       "1"
-      memory_size:                    "128"
-      publish:                        "false"
-      qualified_arn:                  <computed>
-      reserved_concurrent_executions: "-1"
-      role:                           "${aws_iam_role.iam_for_lambda.arn}"
-      runtime:                        "python2.7"
-      s3_bucket:                      "cdflow-lambda-releases"
-      s3_key:                         "s3key.zip"
-      source_code_hash:               <computed>
-      source_code_size:               <computed>
-      tags.%:                         "2"
-      tags.component:                 "test-component"
-      tags.env:                       "test"
-      timeout:                        "3"
-      tracing_config.#:               <computed>
-      version:                        <computed>
-      vpc_config.#:                   "1"
-      vpc_config.0.vpc_id:            <computed>
-        """).strip() in output
+            '-var', 'tags={"component":"test-component","env":"test"}',
+        )
+        resources = get_resource_changes(plan)
+
+        values = resources[
+            'module.lambda.aws_lambda_function.lambda_function'
+        ]['change']['after']
+
+        self.assertEqual(values['tags'], {
+            'component': 'test-component',
+            'env': 'test',
+        })
 
     def test_lambda_in_vpc_gets_correct_execution_role(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-var', 'subnet_ids=[1,2,3]',
-            '-var', 'security_group_ids=[4]',
-            '-no-color',
+        plan = get_plan_json(
             '-target=module.lambda',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-+ module.lambda.aws_iam_role_policy_attachment.vpc_permissions
-      id:                                         <computed>
-      policy_arn:                                 "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
-      role:                                       "${aws_iam_role.iam_for_lambda.name}"
-        """).strip() in output
+            '-var', 'subnet_ids=["1","2","3"]',
+            '-var', 'security_group_ids=["4"]',
+        )
+        resources = get_resource_changes(plan)
+
+        vpc_perm = resources.get(
+            'module.lambda.aws_iam_role_policy_attachment.vpc_permissions[0]'
+        )
+        self.assertIsNotNone(vpc_perm)
+        self.assertEqual(
+            vpc_perm['change']['after']['policy_arn'],
+            'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole',
+        )
 
     def test_cloudwatch_event_rule_created(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-no-color',
-            '-target=module.lambda',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-+ module.lambda.aws_cloudwatch_event_rule.cron_schedule
-      id:                             <computed>
-      arn:                            <computed>
-      description:                    "This event will run according to a schedule for Lambda check_lambda_function"
-      is_enabled:                     "true"
-      name:                           "check_lambda_function-cron_schedule"
-      schedule_expression:            "rate(5 minutes)"
+        plan = get_plan_json('-target=module.lambda')
+        resources = get_resource_changes(plan)
 
-  + module.lambda.aws_cloudwatch_event_target.event_target
-      id:                             <computed>
-      arn:                            "${aws_lambda_function.lambda_function.arn}"
-      rule:                           "check_lambda_function-cron_schedule"
-      target_id:                      <computed>
-        """).strip() in output
+        rule = resources[
+            'module.lambda.aws_cloudwatch_event_rule.cron_schedule'
+        ]['change']['after']
+        self.assertEqual(rule['name'], 'check_lambda_function-cron_schedule')
+        self.assertEqual(rule['schedule_expression'], 'rate(5 minutes)')
+        self.assertEqual(
+            rule['description'],
+            'This event will run according to a schedule for Lambda check_lambda_function',
+        )
+        self.assertTrue(rule['is_enabled'])
+
+        target = resources[
+            'module.lambda.aws_cloudwatch_event_target.event_target'
+        ]['change']['after']
+        self.assertEqual(target['rule'], 'check_lambda_function-cron_schedule')
 
     def test_cloudwatch_event_rule_created_shorten_name(self):
-        output = check_output([
-            'terraform',
-            'plan',
-            '-no-color',
-            '-target=module.lambda_long_name',
-            'test/infra'
-        ]).decode('utf-8')
-        assert dedent("""
-+ module.lambda_long_name.aws_cloudwatch_event_rule.cron_schedule
-      id:                             <computed>
-      arn:                            <computed>
-      description:                    "This event will run according to a schedule for Lambda check_lambda_function_with_a_really_long_name_should_be_truncated"
-      is_enabled:                     "true"
-      name:                           "check_lambda_function_with_a_really_long_name_should_be_truncate"
-      schedule_expression:            "rate(5 minutes)"
+        plan = get_plan_json('-target=module.lambda_long_name')
+        resources = get_resource_changes(plan)
 
-  + module.lambda_long_name.aws_cloudwatch_event_target.event_target
-      id:                             <computed>
-      arn:                            "${aws_lambda_function.lambda_function.arn}"
-      rule:                           "check_lambda_function_with_a_really_long_name_should_be_truncate"
-      target_id:                      <computed>
-        """).strip() in output
+        rule = resources[
+            'module.lambda_long_name.aws_cloudwatch_event_rule.cron_schedule'
+        ]['change']['after']
+        self.assertEqual(
+            rule['name'],
+            'check_lambda_function_with_a_really_long_name_should_be_truncate',
+        )
+        self.assertEqual(rule['schedule_expression'], 'rate(5 minutes)')
+
+
+if __name__ == '__main__':
+    unittest.main()

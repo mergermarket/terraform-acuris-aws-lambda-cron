@@ -2,11 +2,13 @@ locals {
   security_group_ids = var.use_default_security_group == true ? [data.aws_security_group.default[0].id] : var.security_group_ids
   otel_collector_env = var.enable_otel_collector ? {
     OPENTELEMETRY_EXTENSION_LOG_LEVEL = var.otel_collector_layer_extension_log_level
-    AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
+    AWS_ACCOUNT_ID                    = data.aws_caller_identity.current[0].account_id
   } : {}
 }
 
-data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "current" {
+  count = var.enable_otel_collector ? 1 : 0
+}
 
 data "aws_security_group" "default" {
   count = var.use_default_security_group == true ? 1 : 0
@@ -31,7 +33,7 @@ resource "aws_lambda_function" "lambda_function" {
   timeout       = var.timeout
   memory_size   = var.memory_size
   layers        = var.enable_otel_collector ? [var.layer, data.aws_lambda_layer_version.otel_collector[0].arn] : [var.layer]
-  tags          = var.tags
+  tags          = var.tags  
   architectures = var.architectures
 
   dynamic vpc_config {
@@ -77,7 +79,7 @@ resource "aws_cloudwatch_log_subscription_filter" "kinesis_log_stream" {
   count           = var.datadog_log_subscription_arn != "" && !var.enable_otel_collector ? 1 : 0
   name            = "kinesis-log-stream-${var.function_name}"
   destination_arn = var.datadog_log_subscription_arn
-  log_group_name  = aws_cloudwatch_log_group.lambda_loggroup.name
+  log_group_name  = aws_cloudwatch_log_group.lambda_loggroup[0].name
   distribution    = "ByLogStream"
   filter_pattern  = ""
   depends_on      = [aws_lambda_function.lambda_function]
