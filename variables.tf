@@ -115,3 +115,15 @@ variable "use_default_security_group" {
   description = "Whether to use the default security group for the Lambda function."
   default = false
 }
+
+variable "enable_otel_collector" {
+  type = bool
+  description = "Whether to add the OpenTelemetry Collector layer and environment variables to the Lambda function."
+  default = false
+}
+
+variable "otel_collector_layer_extension_log_level" {
+  description = "The log level for the OpenTelemetry Collector layer extension."
+  type        = string
+  default     = "error"
+}
