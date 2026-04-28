@@ -133,3 +133,9 @@ variable "otel_datadog_log_subscription_arn_ssm_parameter_name" {
   description = "The name of the SSM parameter containing the ARN of the Datadog log subscription for the OpenTelemetry Collector to send logs to"
   default = "otel-datadog-log-subscription-role-arn"
 }
+
+variable "disable_logging" {
+  description = "Whether to disable permissions for the Lambda function to write logs."
+  type        = bool
+  default     = false
+}

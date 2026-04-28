@@ -32,6 +32,7 @@ This module will deploy a Lambda function and a cron rule to run the Lambda func
 - `datadog_log_subscription_arn` (string) - Log subscription ARN for shipping logs to Datadog. Defaults to `""`.
 - `enable_otel_collector` (bool) - Whether to add the OpenTelemetry Collector layer and environment variables to the Lambda function. Defaults to `false`.
 - `otel_collector_layer_extension_log_level` (string) - The log level for the OpenTelemetry Collector layer extension. Defaults to `"error"`.
+- `disable_logging` (bool) - Disable all logging cloudwatch/ otel. Defaults to `false`.
 - `lambda_iam_policy_name` (string) - **DEPRECATED** - The name for the Lambda functions IAM policy. Defaults to `""`.
 
 ## Outputs
