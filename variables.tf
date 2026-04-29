@@ -115,3 +115,27 @@ variable "use_default_security_group" {
   description = "Whether to use the default security group for the Lambda function."
   default = false
 }
+
+variable "enable_otel_collector" {
+  type = bool
+  description = "Whether to add the OpenTelemetry Collector layer and environment variables to the Lambda function."
+  default = false
+}
+
+variable "otel_collector_layer_extension_log_level" {
+  description = "The log level for the OpenTelemetry Collector layer extension."
+  type        = string
+  default     = "error"
+}
+
+variable "otel_datadog_log_subscription_arn_ssm_parameter_name" {
+  type = string
+  description = "The name of the SSM parameter containing the ARN of the Datadog log subscription for the OpenTelemetry Collector to send logs to"
+  default = "otel-datadog-log-subscription-role-arn"
+}
+
+variable "disable_logging" {
+  description = "Whether to disable permissions for the Lambda function to write logs."
+  type        = bool
+  default     = false
+}

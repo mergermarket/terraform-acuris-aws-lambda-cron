@@ -37,3 +37,28 @@ resource "aws_iam_role_policy_attachment" "vpc_permissions" {
   count = length(var.subnet_ids) != 0 ? 1 : 0
 }
 
+/// Only create policy if using OpenTelemetry Collector, as it will need permissions to read the log subscription ARN from SSM Parameter Store
+
+data "aws_ssm_parameter" "otel_datadog_log_subscription_arn" {
+  count = var.enable_otel_collector ? 1 : 0
+  
+  name = var.otel_datadog_log_subscription_arn_ssm_parameter_name
+}
+
+data "aws_iam_policy_document" "otel_collector_policy_document" {
+  count = var.enable_otel_collector ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    actions = ["sts:AssumeRole"]
+    resources = [data.aws_ssm_parameter.otel_datadog_log_subscription_arn[0].value]
+  }
+}
+
+resource "aws_iam_role_policy" "otel_collector_policy" {
+  count = var.enable_otel_collector ? 1 : 0
+  role = aws_iam_role.iam_for_lambda.id
+  name = "otel_collector_policy"
+  policy = data.aws_iam_policy_document.otel_collector_policy_document[0].json
+}
