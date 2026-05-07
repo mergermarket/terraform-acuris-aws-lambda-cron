@@ -120,7 +120,7 @@ class TestLambdaCron(unittest.TestCase):
             rule['description'],
             'This event will run according to a schedule for Lambda check_lambda_function',
         )
-        self.assertTrue(rule['is_enabled'])
+        self.assertEqual(rule['state'], 'ENABLED')
 
         target = resources[
             'module.lambda.aws_cloudwatch_event_target.event_target'
